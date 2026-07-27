@@ -1,0 +1,180 @@
+{
+    "llm_provider": {
+        "description": "总结 LLM Provider",
+        "hint": "用于生成长期记忆摘要。留空时使用当前会话正在使用的 LLM Provider。",
+        "obvious_hint": true,
+        "type": "string",
+        "_special": "select_provider",
+        "default": ""
+    },
+    "embedding_provider": {
+        "description": "Embedding Provider",
+        "hint": "用于把消息和记忆转换成向量，以便进行语义检索。留空时使用 AstrBot 中第一个可用的 Embedding Provider。",
+        "obvious_hint": true,
+        "type": "string",
+        "_special": "select_embedding_provider",
+        "default": ""
+    },
+    "include_current_personality": {
+        "description": "总结时注入当前人格",
+        "hint": "开启后，总结 LLM 会同时看到当前系统提示词/人格设定，更容易保留人设规则。",
+        "type": "bool",
+        "default": false
+    },
+    "trigger_rounds": {
+        "description": "轮数总结阈值",
+        "hint": "普通模式下，累计多少轮一问一答后自动总结。开启 use_tool_memory 后，此项不生效。",
+        "obvious_hint": true,
+        "type": "int",
+        "default": 15,
+        "minimum": 1
+    },
+    "use_tool_memory": {
+        "description": "启用 LLM 自动记忆工具",
+        "hint": "开启后只允许 LLM 调用 romantic_memory_save 保存记忆，不再按轮数或闲置时间自动总结。",
+        "obvious_hint": true,
+        "type": "bool",
+        "default": false
+    },
+    "trigger_idle_minutes": {
+        "description": "闲置总结阈值（分钟）",
+        "hint": "普通模式下，私聊闲置达到此分钟数后自动总结未保存的短期对话。开启 use_tool_memory 后，此项不生效。",
+        "type": "int",
+        "default": 60,
+        "minimum": 1
+    },
+    "enable_idle_summary": {
+        "description": "启用闲置自动总结",
+        "hint": "开启后，私聊闲置达到 trigger_idle_minutes 时自动总结未保存的短期对话。默认关闭；关闭时不会启动闲置总结后台任务。use_tool_memory 开启后本项也不会生效。",
+        "obvious_hint": true,
+        "type": "bool",
+        "default": false
+    },
+    "collection_name": {
+        "description": "ChromaDB 集合名称",
+        "hint": "长期记忆保存到 ChromaDB 的哪个集合。修改后会使用新的集合，不会迁移旧集合数据。",
+        "type": "string",
+        "default": "romantic_memory",
+        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{2,62}$"
+    },
+    "vector_db_path": {
+        "description": "ChromaDB 数据目录",
+        "hint": "留空时使用 AstrBot 插件数据目录：data/plugin_data/astrbot_plugin_romantic_memory/chroma。",
+        "type": "string",
+        "default": ""
+    },
+    "enable_isolation": {
+        "description": "按私聊会话隔离",
+        "hint": "开启后按 unified_msg_origin 隔离不同私聊；关闭后所有私聊共用一个会话记忆空间。",
+        "obvious_hint": true,
+        "type": "bool",
+        "default": true
+    },
+    "recall_top_k": {
+        "description": "最多唤醒记忆数",
+        "hint": "语义召回通道一次最多选择多少条长期记忆参与上下文注入；不限制近期记忆通道。",
+        "type": "int",
+        "default": 5,
+        "minimum": 1,
+        "maximum": 50
+    },
+    "context_keep_limit": {
+        "description": "最近记忆保留天数",
+        "hint": "直接注入当前会话和人格下最近 N×24 小时内的全部记忆，不执行相关性、数量或字符数筛选；-1 表示注入全部记忆。原有语义召回仍单独使用相关性阈值、recall_top_k 和 max_inject_chars。默认 5 天。",
+        "obvious_hint": true,
+        "type": "int",
+        "default": 5,
+        "minimum": -1
+    },
+    "custom_filter_terms": {
+        "description": "Custom metadata filter terms",
+        "hint": "用于过滤用户消息开头由 AstrBot 或其他组件附加的元数据，避免时间、天气、地点等动态信息被保存为短期记忆，或参与后续的 Embedding 和关键词召回。",
+        "type": "string",
+        "default": ""
+    },
+    "insert_method": {
+        "description": "记忆注入方式",
+        "hint": "user_prompt：加在用户消息中；system_prompt：加入系统提示词；insert_system_prompt：新增一条系统消息。",
+        "obvious_hint": true,
+        "type": "string",
+        "options": [
+            "user_prompt",
+            "system_prompt",
+            "insert_system_prompt"
+        ],
+        "default": "user_prompt"
+    },
+    "insert_position": {
+        "description": "记忆注入位置",
+        "hint": "prepend 表示放在目标消息前面；append 表示放在目标消息后面。",
+        "type": "string",
+        "options": [
+            "prepend",
+            "append"
+        ],
+        "default": "prepend"
+    },
+    "max_input_length": {
+        "description": "Embedding 最大输入字符数",
+        "hint": "发送给 Embedding Provider 前允许的最大字符数。超出部分会先截断，防止 Provider 报错。",
+        "type": "int",
+        "default": 4000,
+        "minimum": 128,
+        "maximum": 100000
+    },
+    "max_inject_chars": {
+        "description": "最大注入字符数",
+        "hint": "限制语义召回通道的注入字符数；不限制近期记忆通道。设置为 0 表示语义召回不注入。",
+        "obvious_hint": true,
+        "type": "int",
+        "default": 6000,
+        "minimum": 0,
+        "maximum": 100000
+    },
+    "enable_time_decay": {
+        "description": "启用时间衰减",
+        "hint": "启用后时间衰减只影响语义召回的排序，不会淘汰原始相关性已达到阈值的记忆；近期记忆通道不受影响。",
+        "obvious_hint": true,
+        "type": "bool",
+        "default": true
+    },
+    "recall_score_threshold": {
+        "description": "记忆唤醒最低分数",
+        "hint": "语义召回通道最终得分低于此值的记忆不会被注入；不影响近期记忆通道。默认 0.35。",
+        "type": "float",
+        "default": 0.35,
+        "minimum": -100,
+        "maximum": 1
+    },
+    "time_decay_coefficient": {
+        "description": "每日时间衰减系数",
+        "hint": "每经过一天对语义召回排序分数扣除的分数。默认 0.01，仅在 enable_time_decay 开启时生效。",
+        "type": "float",
+        "default": 0.01,
+        "minimum": 0,
+        "maximum": 1
+    },
+    "summary_prompt": {
+        "description": "记忆总结提示词",
+        "hint": "发送给总结 LLM 的提示词。建议要求只输出总结结果，不要输出解释性前缀。",
+        "type": "string",
+        "default": "请以客观第三人称视角记录，使用单段连贯的自然语言表述，避免重复。省略修饰词，禁止使用颜文字和括号描述动作。仅客观记录核心事件、关键设定、冲突及解决方案，禁止添加评价和情感感悟。禁止极端用词。若包含特定人设或规则请精准保留。只需输出总结结果，不要输出解释性前缀。",
+        "minLength": 10,
+        "maxLength": 4000
+    },
+    "recall_system_prompt": {
+        "description": "记忆唤醒提示词",
+        "hint": "记忆注入模板，必须保留 {memory_text} 占位符；插件会把选中的记忆替换到此位置。",
+        "obvious_hint": true,
+        "type": "string",
+        "default": "【系统提示】以下是你脑海中回想起的过往记忆：{memory_text}。请在接下来的对话中，把这些记忆当作你已经历过的事实，自然地融入对话，展现出‘你还记得’的情感反馈，绝对不要生硬地像机器人一样复述记忆。",
+        "minLength": 10,
+        "maxLength": 4000
+    },
+    "include_current_time": {
+        "description": "总结时注入当前时间",
+        "hint": "开启后把当前系统时间提供给总结 LLM，减少模型臆造年份或日期。",
+        "type": "bool",
+        "default": true
+    }
+}

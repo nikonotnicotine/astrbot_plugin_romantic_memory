@@ -1,0 +1,8 @@
+name: astrbot_plugin_romantic_memory
+display_name: 恋爱记忆回溯
+desc: "仅处理私聊的恋爱长期记忆插件：使用 AstrBot 的 LLM 与 Embedding Provider 总结对话，借助本地 ChromaDB 保存，并按语义、关键词和时间衰减唤醒相关回忆。"
+short_desc: "私聊长期记忆、人格隔离、时间加权检索与管理页面。"
+version: v2.14
+author: nikonotnicotine
+astrbot_version: ">=4.0.0"
+repo: https://github.com/nikonotnicotine/astrbot_plugin_romantic_memory
