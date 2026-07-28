@@ -221,10 +221,10 @@ async function saveMemory() {
   }
 }
 
-function shortTermContext(sessionId = "") {
+function shortTermContext(sessionId = "", personalityId = "") {
   return {
     session_id: String(sessionId || "").trim(),
-    personality_id: $("short-personality").value.trim() || "default",
+    personality_id: String(personalityId || $("short-personality").value || "").trim() || "default",
   };
 }
 
@@ -236,10 +236,11 @@ function renderShortTerm(payload) {
   node.innerHTML = messages.map((message) => {
     const id = esc(message.id || "");
     const sessionId = esc(message.session_id || "");
+    const personalityId = esc(message.personality_id || payload?.personality_id || "default");
     const role = esc(message.role || "unknown");
     const type = esc(message.type || "text");
     const timestamp = Number(message.timestamp || 0) > 0 ? new Date(Number(message.timestamp) * 1000).toLocaleString() : "";
-    return `<article class="short-message-card" data-message-id="${id}" data-session-id="${sessionId}">
+    return `<article class="short-message-card" data-message-id="${id}" data-session-id="${sessionId}" data-personality-id="${personalityId}">
       <div class="short-message-head"><div><span class="short-readonly">role: ${role}</span><span class="short-readonly">type: ${type}</span><span class="short-readonly">session: ${sessionId}</span></div><time>${esc(timestamp)}</time></div>
       <textarea class="short-content" rows="5" readonly aria-label="Short-term message content">${esc(message.content || "")}</textarea>
       <div class="short-card-actions"><button class="row-button short-edit" type="button">EDIT</button><button class="row-button danger-button short-delete" type="button">DELETE</button></div>
@@ -275,13 +276,13 @@ async function editShortMessage(button) {
     textarea.focus();
     return;
   }
-  const context = shortTermContext(card.dataset.sessionId);
+  const context = shortTermContext(card.dataset.sessionId, card.dataset.personalityId);
   button.disabled = true;
   try {
-    await api(`/short-term/${encodeURIComponent(messageId)}`, {
+    await api("/short-term/message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...context, content: textarea.value }),
+      body: JSON.stringify({ ...context, message_id: messageId, content: textarea.value }),
     });
     await loadShortTerm();
   } catch (error) {
@@ -293,19 +294,27 @@ async function editShortMessage(button) {
 async function deleteShortMessage(button) {
   const card = button.closest(".short-message-card");
   const messageId = card?.dataset.messageId;
-  if (!card || !messageId || !window.confirm("Delete this short-term message?")) return;
-  const context = shortTermContext(card.dataset.sessionId);
+  if (!card || !messageId) return;
+  if (button.dataset.confirming !== "true") {
+    button.dataset.confirming = "true";
+    button.textContent = "CONFIRM DELETE";
+    $("short-status").textContent = "Click CONFIRM DELETE again to remove this message";
+    return;
+  }
+  const context = shortTermContext(card.dataset.sessionId, card.dataset.personalityId);
   button.disabled = true;
   try {
-    await api(`/short-term/${encodeURIComponent(messageId)}`, {
+    await api("/short-term/message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...context, action: "delete" }),
+      body: JSON.stringify({ ...context, message_id: messageId, action: "delete" }),
     });
     await loadShortTerm();
   } catch (error) {
     $("short-status").textContent = error.message;
     button.disabled = false;
+    button.dataset.confirming = "false";
+    button.textContent = "DELETE";
   }
 }
 async function importMemory() {
