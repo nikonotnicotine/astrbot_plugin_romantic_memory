@@ -6,12 +6,13 @@ import asyncio
 import io
 import json
 import time
-from pathlib import Path
 import zipfile
+from pathlib import Path
 from typing import Any
 
-from astrbot.api import logger
 from quart import Response, jsonify, request
+
+from astrbot.api import logger
 
 from .main import PLUGIN_NAME
 from .memory_store import DEFAULT_PERSONALITY_ID, MemoryStore
@@ -26,19 +27,73 @@ class RomanticMemoryWebApi:
 
     def register_routes(self) -> None:
         register = self.plugin.context.register_web_api
-        register(f"/{PLUGIN_NAME}/personas", self.personas, ["GET"], "List available personas")
-        register(f"/{PLUGIN_NAME}/memories", self.memories, ["GET", "POST"], "Memory list and create")
-        register(f"/{PLUGIN_NAME}/memories/bulk-delete", self.bulk_delete, ["POST"], "Bulk delete memories")
-        register(f"/{PLUGIN_NAME}/memories/<memory_id>", self.memory, ["GET", "POST", "PATCH", "DELETE"], "Memory CRUD")
-        register(f"/{PLUGIN_NAME}/short-term", self.short_term, ["GET"], "Short-term memory")
-        register(f"/{PLUGIN_NAME}/short-term/personality/<personality_id>", self.short_term_personality, ["GET"], "Short-term memory by personality")
-        register(f"/{PLUGIN_NAME}/short-term/<message_id>", self.short_term_message, ["POST", "PATCH", "DELETE"], "Edit or delete short-term message")
-        register(f"/{PLUGIN_NAME}/import", self.import_memories, ["POST"], "Import memories")
-        register(f"/{PLUGIN_NAME}/import_text", self.import_text, ["POST"], "Import memory text")
-        register(f"/{PLUGIN_NAME}/export", self.export_memories, ["GET"], "Export memories")
+        register(
+            f"/{PLUGIN_NAME}/personas",
+            self.personas,
+            ["GET"],
+            "List available personas",
+        )
+        register(
+            f"/{PLUGIN_NAME}/memories",
+            self.memories,
+            ["GET", "POST"],
+            "Memory list and create",
+        )
+        register(
+            f"/{PLUGIN_NAME}/memories/bulk-delete",
+            self.bulk_delete,
+            ["POST"],
+            "Bulk delete memories",
+        )
+        register(
+            f"/{PLUGIN_NAME}/memories/<memory_id>",
+            self.memory,
+            ["GET", "POST", "PATCH", "DELETE"],
+            "Memory CRUD",
+        )
+        register(
+            f"/{PLUGIN_NAME}/short-term", self.short_term, ["GET"], "Short-term memory"
+        )
+        register(
+            f"/{PLUGIN_NAME}/short-term/personality/<personality_id>",
+            self.short_term_personality,
+            ["GET"],
+            "Short-term memory by personality",
+        )
+        register(
+            f"/{PLUGIN_NAME}/short-term/message",
+            self.short_term_message,
+            ["POST"],
+            "Edit or delete short-term message",
+        )
+        register(
+            f"/{PLUGIN_NAME}/short-term/<message_id>",
+            self.short_term_message,
+            ["POST", "PATCH", "DELETE"],
+            "Edit or delete short-term message",
+        )
+        register(
+            f"/{PLUGIN_NAME}/import", self.import_memories, ["POST"], "Import memories"
+        )
+        register(
+            f"/{PLUGIN_NAME}/import_text",
+            self.import_text,
+            ["POST"],
+            "Import memory text",
+        )
+        register(
+            f"/{PLUGIN_NAME}/export", self.export_memories, ["GET"], "Export memories"
+        )
         register(f"/{PLUGIN_NAME}/backup", self.backup, ["GET"], "Backup memories")
-        register(f"/{PLUGIN_NAME}/monitoring", self.monitoring, ["GET"], "Memory monitoring")
-        register(f"/{PLUGIN_NAME}/profile", self.profile, ["GET", "POST"], "Love Memory profile")
+        register(
+            f"/{PLUGIN_NAME}/monitoring", self.monitoring, ["GET"], "Memory monitoring"
+        )
+        register(
+            f"/{PLUGIN_NAME}/profile",
+            self.profile,
+            ["GET", "POST"],
+            "Love Memory profile",
+        )
 
     async def _json(self) -> dict[str, Any]:
         return await request.get_json(silent=True) or {}
@@ -73,7 +128,9 @@ class RomanticMemoryWebApi:
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, TypeError, ValueError):
-            logger.warning("Romantic Memory profile file is invalid; using defaults: %s", path)
+            logger.warning(
+                "Romantic Memory profile file is invalid; using defaults: %s", path
+            )
             return self._default_profile(), False
         if not isinstance(raw, dict):
             return self._default_profile(), False
@@ -87,7 +144,9 @@ class RomanticMemoryWebApi:
         path = self._profile_path()
         path.parent.mkdir(parents=True, exist_ok=True)
         temporary = path.with_name(path.name + ".tmp")
-        temporary.write_text(json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8")
+        temporary.write_text(
+            json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         temporary.replace(path)
 
     async def profile(self) -> Any:
@@ -105,8 +164,11 @@ class RomanticMemoryWebApi:
             await asyncio.to_thread(self._write_profile_file, profile)
             return jsonify({"data": profile, "stored": True})
         except Exception as exc:
-            logger.error("Romantic Memory profile operation failed: %s", exc, exc_info=True)
+            logger.error(
+                "Romantic Memory profile operation failed: %s", exc, exc_info=True
+            )
             return jsonify({"status": "error", "message": str(exc)}), 500
+
     async def personas(self) -> Any:
         """Return all personas known by AstrBot for the manual memory editor."""
         result: list[dict[str, str]] = []
@@ -114,14 +176,29 @@ class RomanticMemoryWebApi:
 
         def add_persona(persona: Any) -> None:
             if isinstance(persona, dict):
-                value = persona.get("name") or persona.get("persona_id") or persona.get("id")
+                value = (
+                    persona.get("name")
+                    or persona.get("persona_id")
+                    or persona.get("id")
+                )
             else:
-                value = getattr(persona, "persona_id", None) or getattr(persona, "name", None) or getattr(persona, "id", None)
+                value = (
+                    getattr(persona, "persona_id", None)
+                    or getattr(persona, "name", None)
+                    or getattr(persona, "id", None)
+                )
             persona_id = str(value or "").strip()
             if not persona_id or persona_id in seen:
                 return
             seen.add(persona_id)
-            result.append({"id": persona_id, "name": "默认人格" if persona_id == DEFAULT_PERSONALITY_ID else persona_id})
+            result.append(
+                {
+                    "id": persona_id,
+                    "name": "默认人格"
+                    if persona_id == DEFAULT_PERSONALITY_ID
+                    else persona_id,
+                }
+            )
 
         add_persona({"name": DEFAULT_PERSONALITY_ID})
         manager = getattr(self.plugin.context, "persona_manager", None)
@@ -144,7 +221,9 @@ class RomanticMemoryWebApi:
                 records = await asyncio.to_thread(
                     self.plugin.store.list_records,
                     self._effective_session(session_id) if session_id else None,
-                    self._effective_personality(personality_id) if personality_id else None,
+                    self._effective_personality(personality_id)
+                    if personality_id
+                    else None,
                 )
                 if keyword:
                     records = [
@@ -158,7 +237,9 @@ class RomanticMemoryWebApi:
             body = await self._json()
             content = str(body.get("content", "")).strip()
             if not content:
-                return jsonify({"status": "error", "message": "content cannot be empty"}), 400
+                return jsonify(
+                    {"status": "error", "message": "content cannot be empty"}
+                ), 400
             session_id = self._effective_session(str(body.get("session_id", "")))
             personality_id = self._effective_personality(body.get("personality_id"))
             vector = await embed(self.plugin, content)
@@ -183,17 +264,27 @@ class RomanticMemoryWebApi:
             body = await self._json()
             raw_ids = body.get("ids", [])
             if not isinstance(raw_ids, list):
-                return jsonify({"status": "error", "message": "ids must be a list"}), 400
+                return jsonify(
+                    {"status": "error", "message": "ids must be a list"}
+                ), 400
             deleted = await asyncio.to_thread(self.plugin.store.delete_many, raw_ids)
             return jsonify({"deleted": deleted})
         except Exception as exc:
             logger.error("Romantic memory bulk delete failed: %s", exc, exc_info=True)
             return jsonify({"status": "error", "message": str(exc)}), 500
+
     async def memory(self, memory_id: str) -> Any:
         try:
             if request.method == "GET":
                 record = await asyncio.to_thread(self.plugin.store.get, memory_id)
-                return (jsonify(record), 200) if record else (jsonify({"status": "error", "message": "memory not found"}), 404)
+                return (
+                    (jsonify(record), 200)
+                    if record
+                    else (
+                        jsonify({"status": "error", "message": "memory not found"}),
+                        404,
+                    )
+                )
             if request.method == "DELETE":
                 deleted = await asyncio.to_thread(self.plugin.store.delete, memory_id)
                 return jsonify({"deleted": deleted}), 200 if deleted else 404
@@ -204,10 +295,18 @@ class RomanticMemoryWebApi:
                 return jsonify({"status": "error", "message": "memory not found"}), 404
             content = str(body.get("content", old.get("content", ""))).strip()
             if not content:
-                return jsonify({"status": "error", "message": "content cannot be empty"}), 400
-            timestamp = float(body.get("timestamp", old.get("timestamp", time.time())) or time.time())
-            session_id = self._effective_session(str(body.get("session_id", old.get("session_id", ""))))
-            personality_id = self._effective_personality(body.get("personality_id", old.get("personality_id")))
+                return jsonify(
+                    {"status": "error", "message": "content cannot be empty"}
+                ), 400
+            timestamp = float(
+                body.get("timestamp", old.get("timestamp", time.time())) or time.time()
+            )
+            session_id = self._effective_session(
+                str(body.get("session_id", old.get("session_id", "")))
+            )
+            personality_id = self._effective_personality(
+                body.get("personality_id", old.get("personality_id"))
+            )
             vector = await embed(self.plugin, content)
             record = await asyncio.to_thread(
                 self.plugin.store.update,
@@ -234,6 +333,7 @@ class RomanticMemoryWebApi:
                 "messages": messages,
             }
         )
+
     async def short_term(self) -> Any:
         session_id = str(request.args.get("session_id", "")).strip()
         personality_id = self._effective_personality(request.args.get("personality_id"))
@@ -243,7 +343,9 @@ class RomanticMemoryWebApi:
             for message in messages:
                 message["session_id"] = canonical_session
         else:
-            messages = await self.plugin.sessions.pending_for_personality(personality_id)
+            messages = await self.plugin.sessions.pending_for_personality(
+                personality_id
+            )
             canonical_session = ""
         return jsonify(
             {
@@ -253,18 +355,29 @@ class RomanticMemoryWebApi:
             }
         )
 
-    async def short_term_message(self, message_id: str) -> Any:
+    async def short_term_message(self, message_id: str | None = None) -> Any:
         try:
             body = await self._json()
-            session_id = str(body.get("session_id") or request.args.get("session_id") or "").strip()
+            message_id = str(message_id or body.get("message_id") or "").strip()
+            if not message_id:
+                return jsonify(
+                    {"status": "error", "message": "message_id cannot be empty"}
+                ), 400
+            session_id = str(
+                body.get("session_id") or request.args.get("session_id") or ""
+            ).strip()
             if not session_id:
-                return jsonify({"status": "error", "message": "session_id cannot be empty"}), 400
+                return jsonify(
+                    {"status": "error", "message": "session_id cannot be empty"}
+                ), 400
             personality_id = self._effective_personality(
                 body.get("personality_id") or request.args.get("personality_id")
             )
             action = str(body.get("action", "update")).lower()
             if request.method == "DELETE" or action == "delete":
-                deleted = await self.plugin.sessions.delete_message(session_id, personality_id, message_id)
+                deleted = await self.plugin.sessions.delete_message(
+                    session_id, personality_id, message_id
+                )
                 return jsonify({"deleted": deleted}), 200 if deleted else 404
             content = str(body.get("content", "")).strip()
             updated = await self.plugin.sessions.update_message(
@@ -274,15 +387,20 @@ class RomanticMemoryWebApi:
                 content,
             )
             if updated is None:
-                return jsonify({"status": "error", "message": "short-term message not found"}), 404
+                return jsonify(
+                    {"status": "error", "message": "short-term message not found"}
+                ), 404
             return jsonify(updated)
         except ValueError as exc:
             return jsonify({"status": "error", "message": str(exc)}), 400
         except RuntimeError as exc:
             return jsonify({"status": "error", "message": str(exc)}), 409
         except Exception as exc:
-            logger.error("Romantic short-term message operation failed: %s", exc, exc_info=True)
+            logger.error(
+                "Romantic short-term message operation failed: %s", exc, exc_info=True
+            )
             return jsonify({"status": "error", "message": str(exc)}), 500
+
     async def import_memories(self) -> Any:
         try:
             uploaded = (await request.files).get("file")
@@ -293,8 +411,12 @@ class RomanticMemoryWebApi:
             fmt = filename.rsplit(".", 1)[-1].lower() if "." in filename else "txt"
             form = await request.form
             default_session = form.get("session_id", "")
-            default_personality = self._effective_personality(form.get("personality_id"))
-            records = MemoryStore.parse_import(raw.decode("utf-8-sig"), fmt, default_session, default_personality)
+            default_personality = self._effective_personality(
+                form.get("personality_id")
+            )
+            records = MemoryStore.parse_import(
+                raw.decode("utf-8-sig"), fmt, default_session, default_personality
+            )
             inserted = []
             for record in records:
                 content = str(record.get("content", "")).strip()
@@ -306,11 +428,15 @@ class RomanticMemoryWebApi:
                         self.plugin.store.add,
                         content,
                         vector,
-                        self._effective_session(str(record.get("session_id", default_session))),
+                        self._effective_session(
+                            str(record.get("session_id", default_session))
+                        ),
                         self.plugin.store.timestamp_for_record(record),
                         str(record["id"]) if record.get("id") else None,
                         record.get("date"),
-                        self._effective_personality(str(record.get("personality_id", default_personality))),
+                        self._effective_personality(
+                            str(record.get("personality_id", default_personality))
+                        ),
                     )
                 )
             return jsonify({"inserted": len(inserted), "data": inserted})
@@ -324,12 +450,18 @@ class RomanticMemoryWebApi:
             body = await self._json()
             content = str(body.get("content", ""))
             if not content:
-                return jsonify({"status": "error", "message": "content cannot be empty"}), 400
+                return jsonify(
+                    {"status": "error", "message": "content cannot be empty"}
+                ), 400
             filename = str(body.get("filename", "memory.txt"))
             fmt = filename.rsplit(".", 1)[-1].lower() if "." in filename else "txt"
             default_session = str(body.get("session_id", ""))
-            default_personality = self._effective_personality(body.get("personality_id"))
-            records = MemoryStore.parse_import(content, fmt, default_session, default_personality)
+            default_personality = self._effective_personality(
+                body.get("personality_id")
+            )
+            records = MemoryStore.parse_import(
+                content, fmt, default_session, default_personality
+            )
             inserted = []
             for record in records:
                 record_content = str(record.get("content", "")).strip()
@@ -341,17 +473,22 @@ class RomanticMemoryWebApi:
                         self.plugin.store.add,
                         record_content,
                         vector,
-                        self._effective_session(str(record.get("session_id", default_session))),
+                        self._effective_session(
+                            str(record.get("session_id", default_session))
+                        ),
                         self.plugin.store.timestamp_for_record(record),
                         str(record["id"]) if record.get("id") else None,
                         record.get("date"),
-                        self._effective_personality(str(record.get("personality_id", default_personality))),
+                        self._effective_personality(
+                            str(record.get("personality_id", default_personality))
+                        ),
                     )
                 )
             return jsonify({"data": {"inserted": len(inserted), "data": inserted}})
         except Exception as exc:
             logger.error("Romantic memory text import failed: %s", exc, exc_info=True)
             return jsonify({"status": "error", "message": str(exc)}), 500
+
     async def export_memories(self) -> Response:
         fmt = request.args.get("format", "json").lower()
         session_id = request.args.get("session_id")
@@ -365,12 +502,24 @@ class RomanticMemoryWebApi:
             body = json.dumps({"memories": records}, ensure_ascii=False, indent=2)
             content_type, suffix = "application/json; charset=utf-8", "json"
         elif fmt == "md":
-            body = "\n".join(f"- {item.get('date', '')} | [{item.get('personality_id', DEFAULT_PERSONALITY_ID)}] {item.get('content', '')}" for item in records)
+            body = "\n".join(
+                f"- {item.get('date', '')} | [{item.get('personality_id', DEFAULT_PERSONALITY_ID)}] {item.get('content', '')}"
+                for item in records
+            )
             content_type, suffix = "text/markdown; charset=utf-8", "md"
         else:
-            body = "\n".join(f"{item.get('date', '')} | [{item.get('personality_id', DEFAULT_PERSONALITY_ID)}] {item.get('content', '')}" for item in records)
+            body = "\n".join(
+                f"{item.get('date', '')} | [{item.get('personality_id', DEFAULT_PERSONALITY_ID)}] {item.get('content', '')}"
+                for item in records
+            )
             content_type, suffix = "text/plain; charset=utf-8", "txt"
-        return Response(body, content_type=content_type, headers={"Content-Disposition": f"attachment; filename=romantic_memories.{suffix}"})
+        return Response(
+            body,
+            content_type=content_type,
+            headers={
+                "Content-Disposition": f"attachment; filename=romantic_memories.{suffix}"
+            },
+        )
 
     async def backup(self) -> Response:
         records = await asyncio.to_thread(self.plugin.store.export_records)
@@ -385,11 +534,25 @@ class RomanticMemoryWebApi:
         }
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
-            archive.writestr("memories.json", json.dumps({"memories": records}, ensure_ascii=False, indent=2))
-            archive.writestr("short_term.json", json.dumps(sessions, ensure_ascii=False, indent=2))
-            archive.writestr("plugin_config.json", json.dumps(dict(self.plugin.config), ensure_ascii=False, indent=2))
+            archive.writestr(
+                "memories.json",
+                json.dumps({"memories": records}, ensure_ascii=False, indent=2),
+            )
+            archive.writestr(
+                "short_term.json", json.dumps(sessions, ensure_ascii=False, indent=2)
+            )
+            archive.writestr(
+                "plugin_config.json",
+                json.dumps(dict(self.plugin.config), ensure_ascii=False, indent=2),
+            )
         buffer.seek(0)
-        return Response(buffer.read(), content_type="application/zip", headers={"Content-Disposition": "attachment; filename=romantic_memory_backup.zip"})
+        return Response(
+            buffer.read(),
+            content_type="application/zip",
+            headers={
+                "Content-Disposition": "attachment; filename=romantic_memory_backup.zip"
+            },
+        )
 
     async def monitoring(self) -> Any:
         long_term_memory_count = 0
@@ -401,25 +564,40 @@ class RomanticMemoryWebApi:
                 records = await asyncio.to_thread(self.plugin.store.list_records)
                 long_term_memory_count = len(records)
                 for record in records:
-                    personality_id = str(record.get("personality_id", DEFAULT_PERSONALITY_ID))
+                    personality_id = str(
+                        record.get("personality_id", DEFAULT_PERSONALITY_ID)
+                    )
                     session_id = str(record.get("session_id", ""))
-                    long_term_personalities[personality_id] = long_term_personalities.get(personality_id, 0) + 1
-                    long_term_sessions[session_id] = long_term_sessions.get(session_id, 0) + 1
+                    long_term_personalities[personality_id] = (
+                        long_term_personalities.get(personality_id, 0) + 1
+                    )
+                    long_term_sessions[session_id] = (
+                        long_term_sessions.get(session_id, 0) + 1
+                    )
             except Exception as exc:
                 long_term_memory_error = str(exc)
-                logger.warning("Romantic memory monitoring could not list long-term memories: %s", exc)
+                logger.warning(
+                    "Romantic memory monitoring could not list long-term memories: %s",
+                    exc,
+                )
         return jsonify(
             {
                 "chroma_path": str(self.plugin.vector_path),
                 "chroma_connected": self.plugin.store.collection is not None,
-                "embedding_provider_available": bool(self.plugin.context.get_all_embedding_providers()),
-                "llm_provider_available": self.plugin.context.get_using_provider(None) is not None,
+                "embedding_provider_available": bool(
+                    self.plugin.context.get_all_embedding_providers()
+                ),
+                "llm_provider_available": self.plugin.context.get_using_provider(None)
+                is not None,
                 "long_term_memory_count": long_term_memory_count,
                 "long_term_personalities": long_term_personalities,
                 "long_term_sessions": long_term_sessions,
                 "long_term_memory_error": long_term_memory_error,
                 "session_count": len(self.plugin.sessions.sessions),
-                "short_term_messages": sum(len(state.messages) for state in self.plugin.sessions.sessions.values()),
+                "short_term_messages": sum(
+                    len(state.messages)
+                    for state in self.plugin.sessions.sessions.values()
+                ),
                 "metrics": self.plugin.metrics,
             }
         )

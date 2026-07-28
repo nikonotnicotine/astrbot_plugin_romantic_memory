@@ -12,8 +12,9 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-
-_CONTEXT_METADATA_MARKER = "\u0055\u0073\u0065\u0072\u53d1\u9001\u5f53\u5730\u65f6\u95f4"
+_CONTEXT_METADATA_MARKER = (
+    "\u0055\u0073\u0065\u0072\u53d1\u9001\u5f53\u5730\u65f6\u95f4"
+)
 _CONTEXT_METADATA_RE = re.compile(
     r"^\s*\[" + re.escape(_CONTEXT_METADATA_MARKER) + r".*?\]\s*\$?\s*",
     re.DOTALL,
@@ -69,7 +70,12 @@ class SessionState:
 class SessionManager:
     """Manage persistent short-term buffers; summary snapshots read the files."""
 
-    def __init__(self, isolated: bool = True, storage_path: Path | None = None, filter_terms: Any = None) -> None:
+    def __init__(
+        self,
+        isolated: bool = True,
+        storage_path: Path | None = None,
+        filter_terms: Any = None,
+    ) -> None:
         self.isolated = isolated
         self.shared_key = "__romantic_shared__"
         self.storage_path = Path(storage_path) if storage_path else None
@@ -93,14 +99,22 @@ class SessionManager:
             return None
         canonical_session = self.key(session_id)
         personality = self._personality(personality_id)
-        return self.storage_path / quote(personality, safe="") / f"{quote(canonical_session, safe='')}.json"
+        return (
+            self.storage_path
+            / quote(personality, safe="")
+            / f"{quote(canonical_session, safe='')}.json"
+        )
 
     def _normalize_message(self, raw: Any) -> dict[str, Any] | None:
         if not isinstance(raw, dict):
             return None
         role = str(raw.get("role", "")).strip().lower()
         message_type = str(raw.get("type", "text") or "text").strip().lower()
-        if role not in {"user", "assistant"} or message_type in {"think", "thinking", "reasoning"}:
+        if role not in {"user", "assistant"} or message_type in {
+            "think",
+            "thinking",
+            "reasoning",
+        }:
             return None
         content = raw.get("content", "")
         if not isinstance(content, str):
@@ -139,10 +153,14 @@ class SessionManager:
         if not isinstance(payload, dict):
             return state
         state.session_id = str(payload.get("session_id") or state.session_id)
-        state.personality_id = self._personality(str(payload.get("personality_id") or personality_id))
+        state.personality_id = self._personality(
+            str(payload.get("personality_id") or personality_id)
+        )
         state.last_system_prompt = str(payload.get("last_system_prompt", "") or "")
         try:
-            state.last_activity = float(payload.get("last_activity", time.time()) or time.time())
+            state.last_activity = float(
+                payload.get("last_activity", time.time()) or time.time()
+            )
         except (TypeError, ValueError):
             state.last_activity = time.time()
         state.messages = [
@@ -150,10 +168,14 @@ class SessionManager:
             for raw in payload.get("messages", [])
             if (message := self._normalize_message(raw)) is not None
         ]
-        state.rounds = sum(1 for message in state.messages if message.get("role") == "assistant")
+        state.rounds = sum(
+            1 for message in state.messages if message.get("role") == "assistant"
+        )
         return state
 
-    def _write_state_sync(self, state: SessionState, messages: list[dict[str, Any]] | None = None) -> None:
+    def _write_state_sync(
+        self, state: SessionState, messages: list[dict[str, Any]] | None = None
+    ) -> None:
         path = self._file_path(state.session_id, state.personality_id)
         if path is None:
             return
@@ -174,22 +196,30 @@ class SessionManager:
             "messages": current,
         }
         temporary = path.with_suffix(".json.tmp")
-        temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        temporary.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         temporary.replace(path)
 
     def _refresh_state_sync(self, state: SessionState) -> None:
+        if self.storage_path is None:
+            return
         fresh = self._read_state_sync(state.session_id, state.personality_id)
         state.messages = fresh.messages
         state.last_activity = fresh.last_activity
         state.rounds = fresh.rounds
         state.last_system_prompt = fresh.last_system_prompt
 
-    async def get(self, session_id: str, personality_id: str | None = None) -> SessionState:
+    async def get(
+        self, session_id: str, personality_id: str | None = None
+    ) -> SessionState:
         personality = self._personality(personality_id)
         cache_key = self._cache_key(session_id, personality)
         async with self._guard:
             if cache_key not in self.sessions:
-                self.sessions[cache_key] = self._read_state_sync(session_id, personality)
+                self.sessions[cache_key] = self._read_state_sync(
+                    session_id, personality
+                )
             return self.sessions[cache_key]
 
     async def restore(self) -> int:
@@ -202,7 +232,9 @@ class SessionManager:
                 try:
                     payload = json.loads(path.read_text(encoding="utf-8"))
                     session_id = str(payload.get("session_id", ""))
-                    personality_id = self._personality(str(payload.get("personality_id", "default")))
+                    personality_id = self._personality(
+                        str(payload.get("personality_id", "default"))
+                    )
                 except (OSError, ValueError, TypeError, AttributeError):
                     continue
                 if not session_id:
@@ -224,7 +256,9 @@ class SessionManager:
     ) -> SessionState:
         personality = self._personality(personality_id)
         state = await self.get(session_id, personality)
-        message = self._normalize_message({"role": role, "type": "text", "content": content})
+        message = self._normalize_message(
+            {"role": role, "type": "text", "content": content}
+        )
         if message is None:
             return state
         now = time.time()
@@ -238,7 +272,9 @@ class SessionManager:
         self._write_state_sync(state)
         return state
 
-    async def snapshot(self, session_id: str, personality_id: str | None = None) -> tuple[SessionState, list[dict[str, Any]]]:
+    async def snapshot(
+        self, session_id: str, personality_id: str | None = None
+    ) -> tuple[SessionState, list[dict[str, Any]]]:
         state = await self.get(session_id, personality_id)
         self._refresh_state_sync(state)
         await state.lock.acquire()
@@ -260,12 +296,16 @@ class SessionManager:
         state.summary_in_progress = False
         state.lock.release()
 
-    async def pending(self, session_id: str, personality_id: str | None = None) -> list[dict[str, Any]]:
+    async def pending(
+        self, session_id: str, personality_id: str | None = None
+    ) -> list[dict[str, Any]]:
         state = await self.get(session_id, personality_id)
         self._refresh_state_sync(state)
         return [dict(item) for item in state.messages]
 
-    async def pending_for_personality(self, personality_id: str | None = None) -> list[dict[str, Any]]:
+    async def pending_for_personality(
+        self, personality_id: str | None = None
+    ) -> list[dict[str, Any]]:
         """Return all pending messages for one personality, tagged with their session."""
         personality = self._personality(personality_id)
         result: list[dict[str, Any]] = []
@@ -300,16 +340,22 @@ class SessionManager:
                 return dict(message)
         return None
 
-    async def delete_message(self, session_id: str, personality_id: str, message_id: str) -> bool:
+    async def delete_message(
+        self, session_id: str, personality_id: str, message_id: str
+    ) -> bool:
         state = await self.get(session_id, personality_id)
         self._refresh_state_sync(state)
         if state.summary_in_progress:
             raise RuntimeError("summary is in progress")
         before = len(state.messages)
-        state.messages = [item for item in state.messages if str(item.get("id")) != str(message_id)]
+        state.messages = [
+            item for item in state.messages if str(item.get("id")) != str(message_id)
+        ]
         if len(state.messages) == before:
             return False
-        state.rounds = sum(1 for item in state.messages if item.get("role") == "assistant")
+        state.rounds = sum(
+            1 for item in state.messages if item.get("role") == "assistant"
+        )
         self._write_state_sync(state)
         return True
 
