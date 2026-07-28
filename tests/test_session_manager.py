@@ -31,3 +31,25 @@ def test_shared_mode_uses_one_buffer():
 
     asyncio.run(run())
 
+
+def test_short_term_messages_can_be_edited_and_deleted(tmp_path):
+    async def run():
+        manager = SessionManager(True, tmp_path)
+        state = await manager.add_message(
+            "session", "user", "before", personality_id="persona"
+        )
+        message_id = state.messages[0]["id"]
+
+        updated = await manager.update_message(
+            "session", "persona", message_id, "after"
+        )
+        assert updated is not None
+        assert updated["content"] == "after"
+        assert [
+            item["content"] for item in await manager.pending("session", "persona")
+        ] == ["after"]
+
+        assert await manager.delete_message("session", "persona", message_id)
+        assert await manager.pending("session", "persona") == []
+
+    asyncio.run(run())
