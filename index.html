@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>恋爱记忆回溯</title>
+  <link rel="stylesheet" href="./style.css?v=20260730-love-memory-mobile-v1">
+</head>
+<body data-mode="light">
+  <div class="app-shell">
+
+
+    <main class="content">
+      <header class="topbar"><div class="topbar-heading"><button id="back-to-love-memory" class="back-button" type="button" hidden aria-hidden="true"><span aria-hidden="true">←</span> LOVE MEMORY</button><div><div class="eyebrow">ROMANTIC MEMORY / PRIVATE ARCHIVE</div><h1 id="page-title">LOVE MEMORY</h1><p id="page-description">A quiet place for the moments we keep.</p></div></div><div class="topbar-actions"><button id="mode-toggle" class="text-button" type="button">DARKMODE</button><button id="love-memory-settings" class="icon-button" type="button" aria-label="Open Love Memory settings" title="Love Memory settings">⚙</button></div></header>
+
+      <section id="page-love-memory" class="page active love-memory-page">
+        <section class="love-memory-hero" aria-labelledby="love-memory-title">
+          <div class="love-memory-kicker">A LITTLE SPACE FOR US</div>
+          <h2 id="love-memory-title">Love Memory</h2>
+          <p id="love-memory-couple" class="love-memory-couple">User &amp; Char</p>
+          <strong id="love-memory-days" class="love-memory-days" aria-live="polite">0</strong>
+          <span class="love-memory-day-label">DAYS TOGETHER</span>
+        </section>
+        <section class="love-memory-relationship" aria-label="User and character profiles">
+          <article class="love-profile">
+            <div id="love-user-signature" class="love-speech-bubble">留下你的签名吧</div>
+            <div id="love-user-avatar" class="love-avatar"><span>U</span></div>
+            <strong id="love-user-display-name" class="love-profile-name">User</strong>
+          </article>
+          <div class="love-connection" aria-hidden="true"><span></span><b>♥</b><span></span></div>
+          <article class="love-profile">
+            <div id="love-char-signature" class="love-speech-bubble">等待一段专属签名</div>
+            <div id="love-char-avatar" class="love-avatar"><span>♡</span></div>
+            <strong id="love-char-display-name" class="love-profile-name">Char</strong>
+          </article>
+        </section>
+        <p id="love-memory-copy" class="love-memory-copy">自从 <strong>今天</strong> 开始，我们已经互相陪伴 <strong>0</strong> 天</p>
+        <section class="love-memory-actions" aria-label="Love Memory actions">
+          <button class="love-action" type="button" data-love-action="dashboard">OVERVIEW</button>
+          <button class="love-action" type="button" data-love-action="memories">MEMORIES</button>
+          <button class="love-action" type="button" data-love-action="short-term">SHORT- TERM</button>
+          <button class="love-action" type="button" data-love-action="transfer">TRANSFER</button>
+        </section>
+      </section>
+
+      <section id="page-dashboard" class="page">
+        <div class="metrics">
+          <article class="metric"><span class="label">CHROMADB</span><strong id="status-chroma">—</strong></article>
+          <article class="metric"><span class="label">EMBEDDING</span><strong id="status-embedding">—</strong></article>
+          <article class="metric"><span class="label">SESSIONS</span><strong id="status-sessions">—</strong></article>
+          <article class="metric"><span class="label">SHORT-TERM</span><strong id="status-cache">—</strong></article>
+        </div>
+        <div class="section-rule"></div>
+        <section class="archive-block"><div class="section-head"><div><span class="eyebrow">SYSTEM NOTE</span><h2>运行监控</h2><p>只读状态。插件配置仍在 AstrBot 插件配置页中修改。</p></div><button id="refresh-monitor" class="text-button" type="button">REFRESH</button></div><div class="monitor-details"><div class="monitor-item"><span class="label">CHROMA PATH</span><strong id="monitor-path">—</strong></div><div class="monitor-item"><span class="label">LAST SUMMARY</span><strong id="monitor-last-summary">—</strong></div><div class="monitor-item"><span class="label">SUMMARY RESULT</span><strong id="monitor-summary-result">—</strong></div><div class="monitor-item"><span class="label">RECALLS</span><strong id="monitor-recalls">—</strong></div></div><div id="monitor-error" class="monitor-error" role="status"></div><pre id="monitor-json" class="json-view">Loading…</pre></section>
+      </section>
+
+      <section id="page-memories" class="page">
+        <section class="archive-block"><div class="section-head"><div><span class="eyebrow">LONG-TERM ARCHIVE</span><h2>长期记忆</h2><p>只查看和管理当前人格可以使用的长期回忆。</p></div><button id="refresh-memories" class="text-button" type="button">REFRESH</button></div>
+          <div class="filter-row"><label class="field"><span class="label">SESSION</span><input id="memory-session" placeholder="留空显示全部"></label><label class="field"><span class="label">PERSONA ID</span><input id="memory-personality" placeholder="留空显示全部；例如 Dante"></label><label class="field field-wide"><span class="label">KEYWORD</span><input id="memory-keyword" placeholder="搜索内容或关键词"></label><label class="field page-size-field"><span class="label">PER PAGE</span><select id="memory-page-size"><option value="10">10</option><option value="25" selected>25</option><option value="50">50</option><option value="100">100</option><option value="0">全部</option></select></label><button id="search-memories" class="text-button" type="button">SEARCH</button></div>
+          <div class="table-wrap"><table><thead><tr><th><input id="memory-select-all" class="memory-check-all" type="checkbox" aria-label="Select all memories on this page"></th><th>DATE</th><th>PERSONA</th><th>SESSION</th><th>MEMORY</th><th></th></tr></thead><tbody id="memory-body"></tbody></table></div><div class="memory-actions"><button id="delete-selected" class="text-button danger-button" type="button" title="只删除当前已勾选的记忆">DELETE SELECTED</button><button id="clear-current" class="text-button danger-button" type="button" title="删除全部会话和人格的长期记忆">DELETE ALL MEMORIES</button><span class="muted">DELETE SELECTED 只删勾选项；DELETE ALL MEMORIES 会删除全部长期记忆</span><span id="memory-action-message" class="message" role="status" aria-live="polite"></span></div><div class="memory-pagination"><button id="memory-prev" class="text-button" type="button">PREV</button><span id="memory-page-info" class="muted">—</span><button id="memory-next" class="text-button" type="button">NEXT</button></div><div id="memory-count" class="muted"></div>
+        </section>
+        <section class="archive-block editor-block"><div class="section-head"><div><span class="eyebrow">NEW ENTRY</span><h2 id="editor-title">新增记忆</h2><p>每条手工记忆都必须归属一个人格。</p></div></div>
+          <input id="edit-id" type="hidden">
+          <div class="form-grid"><label class="field"><span class="label">PERSONA ID</span><input id="edit-personality" value="default" placeholder="例如 Dante"></label><label class="field"><span class="label">SESSION</span><input id="edit-session" placeholder="private-session-id"></label><label class="field"><span class="label">DATE</span><input id="edit-date" type="date"></label></div>
+          <label class="field"><span class="label">CONTENT</span><textarea id="edit-content" rows="4" placeholder="写下值得被记住的事"></textarea></label>
+          <div class="action-row"><button id="save-memory" class="text-button strong" type="button">SAVE</button><button id="clear-editor" class="text-button" type="button">CLEAR</button><span id="memory-message" class="message"></span></div>
+        </section>
+      </section>
+
+      <section id="page-short-term" class="page">
+        <section class="archive-block">
+          <div class="section-head"><div><span class="eyebrow">UNSAVED MOMENTS</span><h2>短期聊天记录</h2><p>这里展示用于总结记忆的持久化私聊记录。role 和 type 只读，content 可以编辑或删除。</p></div></div>
+          <div class="filter-row"><label class="field field-wide"><span class="label">PERSONA ID</span><input id="short-personality" value="default" placeholder="例如 Charlie"></label><button id="load-short" class="text-button strong" type="button">VIEW</button></div>
+          <div id="short-status" class="message" role="status"></div>
+          <div id="short-messages" class="short-message-list"></div>
+        </section>
+      </section>
+      <section id="page-transfer" class="page"><section class="archive-block"><div class="section-head"><div><span class="eyebrow">MOVE YOUR MEMORIES</span><h2>导入记忆</h2><p>导入内容会被归入选定人格，并使用当前 Embedding Provider 向量化。</p></div></div><div class="form-grid"><label class="field"><span class="label">PERSONA ID</span><input id="import-personality" value="default" placeholder="例如 Dante"></label><label class="field"><span class="label">SESSION</span><input id="import-session" placeholder="可留空"></label><label class="field"><span class="label">FILE</span><input id="import-file" type="file" accept=".txt,.md,.json"></label></div><div class="action-row"><button id="import-button" class="text-button strong" type="button">IMPORT</button><span id="import-message" class="message"></span></div></section>
+        <section class="archive-block"><div class="section-head"><div><span class="eyebrow">TAKE IT WITH YOU</span><h2>导出与备份</h2><p>导出逻辑记忆，不包含向量原始数据。</p></div></div><div class="link-row"><button class="text-button strong transfer-download" type="button" data-download-endpoint="/export" data-download-params='{"format":"json"}' data-download-filename="romantic_memories.json">JSON</button><button class="text-button strong transfer-download" type="button" data-download-endpoint="/export" data-download-params='{"format":"md"}' data-download-filename="romantic_memories.md">MARKDOWN</button><button class="text-button strong transfer-download" type="button" data-download-endpoint="/export" data-download-params='{"format":"txt"}' data-download-filename="romantic_memories.txt">TXT</button><button class="text-button strong transfer-download" type="button" data-download-endpoint="/backup" data-download-params='{}' data-download-filename="romantic_memory_backup.zip">BACKUP ZIP</button></div></section></section>
+    </main>
+  </div>
+  <div id="love-memory-settings-modal" class="confirm-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="love-memory-settings-title">
+    <div class="confirm-backdrop" data-love-settings-cancel></div>
+    <section class="confirm-dialog love-settings-dialog" role="document">
+      <div class="eyebrow">PERSONAL PROFILE</div>
+      <h2 id="love-memory-settings-title">Love Memory 配置</h2>
+      <p>头像支持图片 URL 或本地上传；配置仅保存在当前浏览器。</p>
+      <div class="love-settings-grid">
+        <label class="field"><span class="label">USER NAME</span><input id="love-user-name" type="text" value="User"></label>
+        <label class="field"><span class="label">CHAR NAME</span><input id="love-char-name" type="text" value="Char"></label>
+        <label class="field"><span class="label">START DATE</span><input id="love-start-date" type="date"></label>
+        <span></span>
+        <label class="field"><span class="label">USER AVATAR URL</span><input id="love-user-avatar-url" type="url" placeholder="https://..."></label>
+        <label class="field"><span class="label">CHAR AVATAR URL</span><input id="love-char-avatar-url" type="url" placeholder="https://..."></label>
+        <label class="field"><span class="label">UPLOAD USER AVATAR</span><input id="love-user-avatar-file" type="file" accept="image/*"></label>
+        <label class="field"><span class="label">UPLOAD CHAR AVATAR</span><input id="love-char-avatar-file" type="file" accept="image/*"></label>
+        <label class="field"><span class="label">USER SIGNATURE</span><textarea id="love-user-signature-input" rows="2" placeholder="留下你的签名"></textarea></label>
+        <label class="field"><span class="label">CHAR SIGNATURE</span><textarea id="love-char-signature-input" rows="2" placeholder="等待一段专属签名"></textarea></label>
+      </div>
+      <div class="confirm-actions"><button id="love-settings-cancel" class="text-button" type="button">取消</button><button id="love-settings-save" class="text-button strong" type="button">保存配置</button></div>
+    </section>
+  </div>
+  <div id="delete-confirm-modal" class="confirm-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
+    <div class="confirm-backdrop" data-confirm-cancel></div>
+    <section class="confirm-dialog" role="document">
+      <div class="eyebrow">CONFIRM ACTION</div>
+      <h2 id="delete-confirm-title">确认删除</h2>
+      <p id="delete-confirm-message"></p>
+      <div class="confirm-actions">
+        <button id="delete-confirm-cancel" class="text-button" type="button">取消</button>
+        <button id="delete-confirm-continue" class="text-button danger-button strong" type="button">继续</button>
+      </div>
+    </section>
+  </div>
+  <div id="delete-all-modal" class="confirm-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="delete-all-title">
+    <div class="confirm-backdrop" data-delete-all-cancel></div>
+    <section class="confirm-dialog delete-all-dialog" role="document">
+      <div class="eyebrow">DANGER ZONE</div>
+      <h2 id="delete-all-title">删除所有记忆</h2>
+      <p>此操作会删除所有会话、所有人格下的长期记忆，不能撤销。</p>
+      <p class="confirm-instruction">请复制下面的确认文本，完整粘贴到输入框：</p>
+      <code id="delete-all-confirm-text" class="confirm-text"></code>
+      <input id="delete-all-confirm-input" class="confirm-input" type="text" autocomplete="off" spellcheck="false" placeholder="粘贴确认文本">
+      <p id="delete-all-confirm-error" class="confirm-input-error" role="alert"></p>
+      <div class="confirm-actions">
+        <button id="delete-all-cancel" class="text-button" type="button">取消</button>
+        <button id="delete-all-confirm" class="text-button danger-button strong" type="button">删除所有记忆</button>
+      </div>
+    </section>
+  </div>
+  <div id="upload-toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js?v=20260727-love-memory-v3"></script>
+</body>
+</html>
